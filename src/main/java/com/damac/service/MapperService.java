@@ -38,6 +38,15 @@ public class MapperService {
         dto.setName(department.getName());
         return dto;
     }
+
+    public static Department convertToDepartment(DepartmentDTO departmentDTO) {
+        Department department = new Department();
+        department.id = departmentDTO.getId();
+        department.setName(departmentDTO.getName());
+        return department;
+    }
+
+
     public static List<EmployeeDTO> convertToEmployeeDTOList(List<Employee> employees) {
         return employees.stream()
                 .map(MapperService::convertToEmployeeDTO)

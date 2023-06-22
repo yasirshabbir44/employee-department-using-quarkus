@@ -40,7 +40,7 @@ public class EmployeeResource {
         // Return a response with HTTP status code and, if needed, the newly created employee
         Employee employee = MapperService.convertToEmployee(employeeDTO);
 
-         // Check if the department exists
+        // Check if the department exists
         Department department = getDepartment(employeeDTO);
 
         employee.setDepartment(department);
@@ -51,13 +51,14 @@ public class EmployeeResource {
     }
 
 
-
     @PUT
-    @Path("/{id}")
     public Response updateEmployee(@PathParam("id") Long id, EmployeeDTO employeeDTO) {
         // Implement logic to update an existing employee
         // Return a response with HTTP status code and, if needed, the updated employee
-        Employee employee = Employee.findById(id);
+        Employee employee = (Employee) Employee.findByIdOptional(id).orElseThrow(() -> {
+            throw new NotFoundException("No departments found");
+        });
+
         if (employee != null) {
             employee.setName(employeeDTO.getName());
             employee.setDateOfBirth(employeeDTO.getDateOfBirth());

@@ -22,17 +22,27 @@ import java.util.stream.Collectors;
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 public class DepartmentResource {
+
     @GET
-    public List<Department> getAllDepartments() {
+    public Response getAllDepartments() {
         // Implement logic to fetch all departments
-        return Department.listAll();
+        List<DepartmentDTO> departmentDTOS = Department.listAll().stream().map(depar -> {
+            Department department = (Department) depar;
+            DepartmentDTO departmentDTO = MapperService.convertToDepartmentDTO(department);
+            departmentDTO.setEmployees(MapperService.convertToEmployeeDTOList(department.getEmployees()));
+            return departmentDTO;
+        }).toList();
+        return Response.ok(departmentDTOS).build();
     }
 
     @GET
     @Path("/{id}")
-    public Department getDepartmentById(@PathParam("id") Long id) {
+    public Response getDepartmentById(@PathParam("id") Long id) {
         // Implement logic to fetch a department by ID
-        return Department.findById(id);
+        Department department = Department.findById(id);
+        DepartmentDTO departmentDTO = MapperService.convertToDepartmentDTO(department);
+        departmentDTO.setEmployees(MapperService.convertToEmployeeDTOList(department.getEmployees()));
+        return Response.ok(departmentDTO).build();
     }
 
 
@@ -69,31 +79,38 @@ public class DepartmentResource {
 
     @POST
     @Transactional
-    public Department createDepartment(Department department) {
+    public Response createDepartment(DepartmentDTO departmentDTO) {
         // Implement logic to create a new department
+        Department department = MapperService.convertToDepartment(departmentDTO);
         department.persist();
-        return department;
+        departmentDTO = MapperService.convertToDepartmentDTO(department);
+        return Response.ok(departmentDTO).build();
     }
 
     @PUT
     @Transactional
-    @Path("/{id}")
-    public void updateDepartment(@PathParam("id") Long id, Department updatedDepartment) {
+    public Response updateDepartment(DepartmentDTO departmentDTO) {
         // Implement logic to update an existing department
-        Department department = Department.findById(id);
+        Department department = (Department) Department.findByIdOptional(departmentDTO.getId())
+                .orElseThrow(() -> {
+                    throw new NotFoundException("No departments found");
+                });
         if (department != null) {
-            department.setName(updatedDepartment.getName());
+            department.setName(department.getName());
             department.persist();
         }
+
+        return Response.ok(MapperService.convertToDepartmentDTO(department)).build();
     }
 
     @DELETE
     @Path("/{id}")
-    public void deleteDepartment(@PathParam("id") Long id) {
+    public Response deleteDepartment(@PathParam("id") Long id) {
         // Implement logic to delete a department by ID
         Department department = Department.findById(id);
         if (department != null) {
             department.delete();
         }
+        return Response.status(Response.Status.NO_CONTENT).build();
     }
 }
