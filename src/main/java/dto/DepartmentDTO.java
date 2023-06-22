@@ -20,5 +20,6 @@ public class DepartmentDTO{
     private Long id;
     private String name;
     private List<EmployeeDTO> employees;
-
+    private Integer noOfEmployee;
+    private Double totalSalary;
 }

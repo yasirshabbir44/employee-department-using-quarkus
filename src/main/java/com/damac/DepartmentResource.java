@@ -16,6 +16,7 @@ import model.Employee;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 @Path("/departments")
@@ -49,20 +50,36 @@ public class DepartmentResource {
     @GET
     @Path("/max-salary-employees")
     public Response getDepartmentsWithMaxSalaryEmployees() {
-        List<Department> departments = Department.listAll();
 
-        List<DepartmentDTO> departmentDTOs = new ArrayList<>();
+        List<DepartmentDTO> departmentDTOs = Department.listAll().parallelStream()
+                .map(panacheEntityBase -> {
+                    Department department = (Department) panacheEntityBase;
+                    final double maxSalary = department.getEmployees()
+                            .stream()
+                            .mapToDouble(Employee::getSalary)
+                            .max()
+                            .orElse(0.0);
 
-        for (Department department : departments) {
-            List<EmployeeDTO> employeesWithMaxSalary = findMaxSalaryEmployee(department.getEmployees());
+                    AtomicReference<Double> totalSalary = new AtomicReference<>(0.0);
 
-            DepartmentDTO departmentDTO = new DepartmentDTO();
-            departmentDTO.setId(department.id);
-            departmentDTO.setName(department.getName());
-            departmentDTO.setEmployees(employeesWithMaxSalary);
+                    List<EmployeeDTO> employeesWithMaxSalary = department.getEmployees()
+                            .parallelStream()
+                            .filter(employee -> {
+                                totalSalary.set(totalSalary.get() + employee.getSalary());
+                                return employee.getSalary() == maxSalary;
+                            })
+                            .map(MapperService::convertToEmployeeDTO)
+                            .collect(Collectors.toList());
 
-            departmentDTOs.add(departmentDTO);
-        }
+
+                    return DepartmentDTO.builder()
+                            .id(department.id)
+                            .name(department.getName())
+                            .employees(employeesWithMaxSalary)
+                            .noOfEmployee(department.getEmployees().size())
+                            .totalSalary(totalSalary.get())
+                            .build();
+                }).toList();
 
         return Response.ok(departmentDTOs).build();
     }
@@ -102,21 +119,5 @@ public class DepartmentResource {
             department.delete();
         }
         return Response.status(Response.Status.NO_CONTENT).build();
-    }
-
-
-    private List<EmployeeDTO> findMaxSalaryEmployee(List<Employee> employees) {
-        // Implement logic to find the maximum salary among employees
-       final double maxSalary = employees
-                .stream()
-                .mapToDouble(Employee::getSalary)
-                .max()
-                .orElse(0.0);
-
-        return employees
-                .parallelStream()
-                .filter(employee -> employee.getSalary() == maxSalary)
-                .map(MapperService::convertToEmployeeDTO)
-                .collect(Collectors.toList());
     }
 }
