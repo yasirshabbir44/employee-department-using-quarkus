@@ -7,7 +7,6 @@ The Employee-Department application is a sample application built with Quarkus a
 
 - Java Development Kit (JDK) 11 or higher
 - Apache Maven
-- PostgreSQL database (or any other supported database)
 - cURL or an API testing tool (e.g., Postman)
 
 ## Technologies Used
