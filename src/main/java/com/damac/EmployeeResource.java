@@ -23,7 +23,6 @@ public class EmployeeResource {
     @GET
     public List<EmployeeDTO> getAllEmployees() {
         // Implement logic to fetch all employees from the database or any other data source
-
         return MapperService.convertToEmployeeDTOList(Employee.listAll());
     }
 
@@ -39,23 +38,10 @@ public class EmployeeResource {
     public Response createEmployee(EmployeeDTO employeeDTO) {
         // Implement logic to create a new employee
         // Return a response with HTTP status code and, if needed, the newly created employee
-
         Employee employee = MapperService.convertToEmployee(employeeDTO);
 
-        System.out.println(employee.toString());
-        // Check if the department exists
-        String departmentName = Optional.ofNullable(employeeDTO.getDepartment()).map(DepartmentDTO::getName).orElse("");
-        System.out.println(departmentName);
-
-
-        Department department = Department.find("name = :name", Parameters.with("name", departmentName)).firstResult();
-
-        if (department == null) {
-            // Department doesn't exist, create a new one
-            department = new Department();
-            department.setName(employeeDTO.getDepartment().getName());
-            department.persist();
-        }
+         // Check if the department exists
+        Department department = getDepartment(employeeDTO);
 
         employee.setDepartment(department);
         employee.persistAndFlush();
@@ -64,19 +50,24 @@ public class EmployeeResource {
 
     }
 
+
+
     @PUT
     @Path("/{id}")
-    public Employee updateEmployee(@PathParam("id") Long id, EmployeeDTO updatedEmployee) {
+    public Response updateEmployee(@PathParam("id") Long id, EmployeeDTO employeeDTO) {
         // Implement logic to update an existing employee
         // Return a response with HTTP status code and, if needed, the updated employee
         Employee employee = Employee.findById(id);
         if (employee != null) {
-            employee.setName(updatedEmployee.getName());
-            employee.setDateOfBirth(updatedEmployee.getDateOfBirth());
-            employee.setSalary(updatedEmployee.getSalary());
-            employee.persist();
+            employee.setName(employeeDTO.getName());
+            employee.setDateOfBirth(employeeDTO.getDateOfBirth());
+            employee.setSalary(employeeDTO.getSalary());
         }
-        return employee;
+
+        Department department = getDepartment(employeeDTO);
+        employee.setDepartment(department);
+        employee.persist();
+        return Response.status(Response.Status.OK).entity(MapperService.convertToEmployeeDTO(employee)).build();
     }
 
     @DELETE
@@ -90,5 +81,18 @@ public class EmployeeResource {
         }
     }
 
+
+    private Department getDepartment(EmployeeDTO employeeDTO) {
+        String departmentName = Optional.ofNullable(employeeDTO.getDepartment()).map(DepartmentDTO::getName).orElse("");
+        Department department = Department.find("name = :name", Parameters.with("name", departmentName)).firstResult();
+
+        if (department == null) {
+            // Department doesn't exist, create a new one
+            department = new Department();
+            department.setName(employeeDTO.getDepartment().getName());
+            department.persist();
+        }
+        return department;
+    }
 
 }
