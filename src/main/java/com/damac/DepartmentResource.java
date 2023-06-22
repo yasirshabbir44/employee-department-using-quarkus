@@ -54,17 +54,7 @@ public class DepartmentResource {
         List<DepartmentDTO> departmentDTOs = new ArrayList<>();
 
         for (Department department : departments) {
-            double maxSalary = department.getEmployees()
-                    .stream()
-                    .mapToDouble(Employee::getSalary)
-                    .max()
-                    .orElse(0.0);
-
-            List<EmployeeDTO> employeesWithMaxSalary = department.getEmployees()
-                    .stream()
-                    .filter(employee -> employee.getSalary() == maxSalary)
-                    .map(MapperService::convertToEmployeeDTO)
-                    .collect(Collectors.toList());
+            List<EmployeeDTO> employeesWithMaxSalary = findMaxSalaryEmployee(department.getEmployees());
 
             DepartmentDTO departmentDTO = new DepartmentDTO();
             departmentDTO.setId(department.id);
@@ -112,5 +102,21 @@ public class DepartmentResource {
             department.delete();
         }
         return Response.status(Response.Status.NO_CONTENT).build();
+    }
+
+
+    private List<EmployeeDTO> findMaxSalaryEmployee(List<Employee> employees) {
+        // Implement logic to find the maximum salary among employees
+       final double maxSalary = employees
+                .stream()
+                .mapToDouble(Employee::getSalary)
+                .max()
+                .orElse(0.0);
+
+        return employees
+                .parallelStream()
+                .filter(employee -> employee.getSalary() == maxSalary)
+                .map(MapperService::convertToEmployeeDTO)
+                .collect(Collectors.toList());
     }
 }
